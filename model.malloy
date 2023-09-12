@@ -1,0 +1,82 @@
+source: user is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 'Joe')
+      , (2, 'Mary')
+  ) 
+
+  user (uid, name)
+""") extend {
+  primary_key: uid
+}
+
+source: item is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 1, 20)
+      , (2, null, 30)
+      , (3, 5, 35)
+    ) 
+
+    item (iid, size, price)
+""") extend {
+  primary_key: iid
+}
+
+source: payment is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 'Paypal')
+      , (2, 'Visa')
+  ) 
+
+  payment (pid, name)
+""") extend {
+  primary_key: pid
+}
+
+source: ad is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 'Google', 500)
+      , (2, 'Facebook', 600)
+    ) 
+
+    ad (aid, source, cost)
+""") extend {
+  primary_key: aid
+}
+
+source: ad_view is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 1)
+      , (1, 2)
+      , (2, 1)
+  ) 
+
+    ad_view (uid, aid)
+""") extend {
+  join_one: user with uid
+  join_one: ad with aid
+}
+
+source: purchase_history is duckdb.sql("""
+  SELECT * FROM (
+    VALUES
+      (1, 1, 1)
+      , (2, 1, 1)
+      , (2, 2, null)
+      , (2, 4, 2)
+    ) 
+
+    purchase_history (uid, iid, pid)
+""") extend {
+  join_one: user with uid
+  join_one: item with iid
+  join_one: payment with pid
+  
+  // The original paper describes this as a one-to-many relationship,
+  // but it's actually many-to-many.
+  join_cross: ad_view on uid = ad_view.uid
+}

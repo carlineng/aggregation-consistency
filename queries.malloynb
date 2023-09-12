@@ -1,0 +1,50 @@
+>>>malloy
+import 'model.malloy'
+>>>markdown
+This notebook provides implementations of the queries in the paper [Aggregation Consistency Errors in Semantic Layers and How to Avoid Them](https://arxiv.org/pdf/2307.00417.pdf) by Huang et al.
+
+In particular, the paper says that Malloy computes some of these quantities incorrectly. We suspect this is because the authors of the paper were not making use of Malloy's [Aggregate Locality](https://malloydata.github.io/documentation/language/aggregates#aggregate-locality) functionality, which is explicitly designed to avoid problems with join fanouts.
+
+The data model is described in this repo in the `model.malloy` files. Queries are in the notebook below:
+>>>markdown
+# Query 1
+
+What is the total cost of ads from all sources?
+>>>malloy
+// Wrong way:
+run: ad_view -> {
+  aggregate: total_cost is source.sum(ad.cost)
+}
+>>>malloy
+// Correct way:
+run: ad_view -> {
+  aggregate: total_cost is ad.sum(ad.cost)
+}
+>>>markdown
+# Query 2
+
+What is the total revenue from the purchased items?
+>>>malloy
+run: purchase_history -> {
+  aggregate: total_revenue is source.sum(item.price)
+}
+>>>markdown
+# Question 3
+What is the total revenue from different ad sources?
+>>>malloy
+// Naive "weighting"
+run: purchase_history -> {
+  group_by: ad_view.ad.`source`, uid
+  aggregate: total_revenue is source.sum(item.price)
+}
+>>>malloy
+// Using "weighted" attribution
+run: purchase_history -> {
+  group_by: ad_view.ad.`source`, uid
+  aggregate: 
+    naive_revenue is source.sum(item.price)
+    user_views is all(ad_view.count(), uid)
+    weighted_revenue is source.sum(item.price) / all(ad_view.count(), uid)
+}
+>>>markdown
+The paper introduces the notion of "weighting" as a primitive to counteract join fanouts; however, in question 3, the issue at hand is not actually related to join fanouts. The weights are set according to the user's desired business logic (equal weighting? first-touch? last-touch?). This is an implementation question that must be left to the user, and not decided by the language. The language should only provide the user with the ability to express *how* the weighting should occur, and as demonstrated by the last query above, Malloy does.
