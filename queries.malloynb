@@ -15,11 +15,16 @@ What is the total cost of ads from all sources?
 run: ad_view -> {
   aggregate: total_cost is source.sum(ad.cost)
 }
+
+// In this query, the "sum" is local to the "ad_view" table, which results in a fan-out of results.
 >>>malloy
 // Correct way:
 run: ad_view -> {
-  aggregate: total_cost is ad.sum(ad.cost)
+  aggregate: total_cost is ad.cost.sum()
 }
+
+// The question is asking for costs relative to the "ad" table.
+// By referencing the join path, we can make sure the aggregation is done with respect to the right quantity.
 >>>markdown
 # Query 2
 
