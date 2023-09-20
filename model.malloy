@@ -1,11 +1,11 @@
-source: user is duckdb.sql("""
+source: userTbl is duckdb.sql("""
   SELECT * FROM (
     VALUES
       (1, 'Joe')
       , (2, 'Mary')
   ) 
 
-  user (uid, name)
+  userTbl (uid, name)
 """) extend {
   primary_key: uid
 }
@@ -57,7 +57,7 @@ source: ad_view is duckdb.sql("""
 
     ad_view (uid, aid)
 """) extend {
-  join_one: user with uid
+  join_one: userTbl with uid
   join_one: ad with aid
 }
 
@@ -72,7 +72,7 @@ source: purchase_history is duckdb.sql("""
 
     purchase_history (uid, iid, pid)
 """) extend {
-  join_one: user with uid
+  join_one: userTbl with uid
   join_one: item with iid
   join_one: payment with pid
   
